@@ -1,9 +1,23 @@
 {
     "cSpell.words": [
+        "amax",
         "conda",
+        "cumsum",
         "gradio",
+        "hpss",
+        "librosa",
+        "linspace",
+        "lyricsgenius",
+        "mels",
+        "melspectrogram",
         "plotly",
-        "thehappydinoa"
+        "pydantic",
+        "pytest",
+        "sdmv",
+        "Spotdl",
+        "thehappydinoa",
+        "timesteps",
+        "xaxis"
     ],
     "python.linting.enabled": true,
     "python.linting.flake8Enabled": true,

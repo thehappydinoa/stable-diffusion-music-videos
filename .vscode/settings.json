@@ -1,0 +1,11 @@
+{
+    "cSpell.words": [
+        "conda",
+        "gradio",
+        "plotly",
+        "thehappydinoa"
+    ],
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "black",
+}

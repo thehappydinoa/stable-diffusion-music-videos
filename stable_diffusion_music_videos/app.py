@@ -1,4 +1,3 @@
-import os
 import random
 import re
 from pathlib import Path
@@ -22,7 +21,7 @@ from .settings import Settings
 from .stable_diffusion import NoCheck
 
 css = None
-with open(os.path.join(static_dir, "styles.css")) as f:
+with open(static_dir / "styles.css") as f:
     css = f.read()
 
 settings = Settings()  # type: ignore
@@ -45,17 +44,6 @@ is_cuda = torch.cuda.is_available()
 if not is_cuda:
     print("CUDA not available. Exiting.")
     exit(1)
-
-sd_pipeline = StableDiffusionWalkPipeline.from_pretrained(
-    settings.stable_diffusion_model,
-    use_auth_token=True,
-    torch_dtype=torch.float16,
-    revision="fp16",
-    scheduler=LMSDiscreteScheduler(
-        beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
-    ),
-).to("cuda")
-sd_pipeline.safety_checker = NoCheck().cuda()
 
 
 def get_spec_norm(wav, sr, n_mels=512, hop_length=704):
@@ -216,6 +204,17 @@ def generate_music_video(
     prompt_template: str = "{}",
 ) -> str:
     """Generate a music video using the given prompts and audio offsets"""
+    sd_pipeline = StableDiffusionWalkPipeline.from_pretrained(
+        settings.stable_diffusion_model,
+        use_auth_token=True,
+        torch_dtype=torch.float16,
+        revision="fp16",
+        scheduler=LMSDiscreteScheduler(
+            beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
+        ),
+    ).to("cuda")
+    sd_pipeline.safety_checker = NoCheck().cuda()
+
     # Get the number of frames to interpolate between
     interpolation_steps = get_interpolation_steps_from_audio_offsets(audio_offsets, fps)
 
@@ -381,4 +380,125 @@ with gr.Blocks(title="Stable Diffusion Music Videos", css=css) as demo:
         )
 
     with gr.Tab("Music Video"):
-        pass
+        song_name = gr.Textbox(
+            "Do I Wanna Know?",
+            label="Song Name",
+            placeholder="Blink 182 - All the Small Things",
+        )
+        # Audio file upload
+        audio_file = gr.Audio(type="filepath", label="Audio File")
+        prompts = gr.Textbox(
+            "I'm so happy",
+            label="Prompts",
+            placeholder="I'm so happy",
+        )
+        seeds = gr.Textbox(
+            "1",
+            label="Seeds",
+            placeholder="1",
+        )
+        fps = gr.Slider(
+            value=30,
+            minimum=1,
+            maximum=90,
+            step=1,
+            label="FPS",
+        )
+        width = gr.Slider(
+            value=512,
+            minimum=256,
+            maximum=1024,
+            step=32,
+            label="Width",
+        )
+        height = gr.Slider(
+            value=512,
+            minimum=256,
+            maximum=1024,
+            step=32,
+            label="Height",
+        )
+        start_time = gr.Number(
+            value=0,
+            label="Start Time (s)",
+        )
+        end_time = gr.Number(
+            value=0,
+            label="End Time (s)",
+        )
+        guidance_scale = gr.Slider(
+            value=7.5,
+            minimum=0,
+            maximum=20,
+            step=0.5,
+            label="Guidance Scale",
+        )
+        num_inference_steps = gr.Slider(
+            value=100,
+            minimum=10,
+            maximum=300,
+            step=10,
+            label="Num Inference Steps",
+        )
+        prompt_template = gr.Textbox(
+            "{}",
+            label="Prompt Template",
+            placeholder="{}",
+        )
+
+        # Music Video button
+        music_video_btn = gr.Button("Generate Music Video")
+
+        video_output = gr.Video(
+            label="Video Output",
+            interactive=False,
+        )
+
+        def generate_music_video_fn(
+            song_name: str,
+            audio_file: str,
+            prompts: str,
+            seeds: str,
+            fps: int,
+            width: int,
+            height: int,
+            start_time: float,
+            end_time: float,
+            guidance_scale: float,
+            num_inference_steps: int,
+            prompt_template: str,
+        ) -> str:
+            """Generate Music Video"""
+            video_path = generate_music_video(
+                song_name=song_name,
+                prompts=prompts.split("\n"),
+                audio_file_path=audio_file,
+                audio_offsets=[start_time, end_time],
+                fps=fps,
+                width=width,
+                height=height,
+                guidance_scale=guidance_scale,
+                num_inference_steps=num_inference_steps,
+                prompt_template=prompt_template,
+                seeds=seeds.split("\n"),
+            )
+            return video_path
+
+        music_video_btn.click(
+            generate_music_video_fn,
+            inputs=[
+                song_name,
+                audio_file,
+                prompts,
+                seeds,
+                fps,
+                width,
+                height,
+                start_time,
+                end_time,
+                guidance_scale,
+                num_inference_steps,
+                prompt_template,
+            ],
+            outputs=[video_output],
+        )

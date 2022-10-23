@@ -1,15 +1,16 @@
-import os.path
 from pathlib import Path
 from typing import Optional
 from pydantic import BaseSettings, Field
 
+from .paths import project_dir
+
 
 class Settings(BaseSettings):
     output_path: Path = Field(
-        default=os.path.join(os.path.dirname(__file__), "..", "outputs")
+        default=project_dir / "outputs",
     )
     audio_path: Path = Field(
-        default=os.path.join(os.path.dirname(__file__), "..", "audio")
+        default=project_dir / "audio",
     )
 
     default_sample_rate: int = Field(default=22050)
